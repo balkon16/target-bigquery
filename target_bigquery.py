@@ -177,7 +177,7 @@ def define_schema(field, name):
                 schema_type = "timestamp"
 
     if schema_type == 'number':
-        schema_type = 'FLOAT'
+        schema_type = 'NUMERIC'
 
     return (schema_name, schema_type, schema_mode, schema_description, schema_fields)
 
