@@ -50,6 +50,7 @@ CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Singer BigQuery Target'
 MAX_NO_RECORDS = 10000
 MAX_PAYLOAD_SIZE = int(flags.request_size)
+SDC_DELETED_AT = "_sdc_deleted_at"
 
 StreamMeta = collections.namedtuple('StreamMeta', ['schema', 'key_properties', 'bookmark_properties'])
 
@@ -124,6 +125,11 @@ def safeget(dct, *keys):
             logger.warning('safeget: KeyError - {} at {}'.format(keys, key))
             return None
     return dct
+
+
+def is_record_deleted(obj, delete_flag):
+    delete_ts = obj.get(delete_flag)
+    return True if delete_ts else False
 
 
 def emit_state(state):
@@ -289,7 +295,8 @@ def persist_lines_job(project_id, dataset_id, lines=None, truncate=False, valida
     return state
 
 
-def persist_lines_stream(project_id, dataset_id, ensure_ascii, lines=None, validate_records=True, array_nodes=[], force_to_string_fields=[]):
+def persist_lines_stream(project_id, dataset_id, ensure_ascii, lines=None, validate_records=True, array_nodes=[],
+                         force_to_string_fields=[]):
     state = None
     schemas = {}
     key_properties = {}
@@ -337,6 +344,9 @@ def persist_lines_stream(project_id, dataset_id, ensure_ascii, lines=None, valid
 
             schema = schemas[msg.stream]
 
+            if is_record_deleted(msg.record, SDC_DELETED_AT):
+                continue
+
             if validate_records:
                 validate(msg.record, schema)
 
@@ -346,7 +356,8 @@ def persist_lines_stream(project_id, dataset_id, ensure_ascii, lines=None, valid
 
             item_size = getsize(modified_record)
             if payload_size + item_size >= MAX_PAYLOAD_SIZE:
-                logger.info('Near max request size. Sending: {} records, payload size: {}.'.format(len(data_holder), payload_size))
+                logger.info('Near max request size. Sending: {} records, payload size: {}.'.format(len(data_holder),
+                                                                                                   payload_size))
                 upload_res = bigquery_client.insert_rows_json(tables[msg.stream], data_holder)
                 if upload_res:
                     logger.error('Upload error: {}'.format(upload_res))
