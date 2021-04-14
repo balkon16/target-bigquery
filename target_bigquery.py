@@ -36,7 +36,7 @@ try:
     parser.add_argument("--no-records", help="Send a specified number of records to BigQuery")
     parser.add_argument('--pickle-location', help="Pickle's file location", required=True)
     parser.add_argument('--request-size', help="Maximum request size in bytes", required=True)
-    parser.add_argument('--ensure-ascii', help="Ensure ASCII characters (true/false).", required=True)
+    parser.add_argument('--ensure-ascii', help="Ensure ASCII characters (true/false).", required=False)
     flags = parser.parse_args()
     flags.ensure_ascii = True if flags.ensure_ascii == 'true' else False
 except ImportError:
@@ -177,7 +177,7 @@ def define_schema(field, name):
                 schema_type = "timestamp"
 
     if schema_type == 'number':
-        schema_type = 'FLOAT'
+        schema_type = 'NUMERIC'
 
     return (schema_name, schema_type, schema_mode, schema_description, schema_fields)
 
