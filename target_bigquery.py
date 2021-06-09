@@ -132,6 +132,18 @@ def is_record_deleted(obj, delete_flag):
     return True if delete_ts else False
 
 
+def delete_blob_fields(obj):
+    # this functions is a temporary solution for problems concerning one particular collection: OnlineCheckinProcesses.OnlineCheckinProcesses
+    boardingCards = safeget(obj, "boardingCards")
+    if boardingCards:
+        for card in boardingCards:
+            try:
+                del card['rawData']
+            except KeyError:
+                pass
+    return obj
+
+
 def emit_state(state):
     if state is not None:
         line = json.dumps(state)
@@ -352,6 +364,7 @@ def persist_lines_stream(project_id, dataset_id, ensure_ascii, lines=None, valid
 
             modified_record = handle_decimal_values(msg.record)
             modified_record = handle_empty_arrays(array_nodes, modified_record)
+            modified_record = delete_blob_fields(modified_record)
             modified_record = force_fields_to_string(force_to_string_fields, modified_record, ensure_ascii)
 
             item_size = getsize(modified_record)
